@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# Working notes and assistant scratch files, kept local
+CLAUDE.md
+PLAN.md
+NOTES.md
+.claude/
+*.log
+
+# Datasets are downloaded, not committed: see uplift/data.py
+data/raw/*
+!data/raw/.gitkeep
+
+# Generated figures. The results CSV IS committed, because the README
+# quotes it and scripts/check_readme_claims.py verifies it.
+results/*.png
+results/*.svg

@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uplift-modelling-benchmark"
+version = "0.1.0"
+description = "Uplift modelling with a synthetic oracle for measuring estimation error"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # numpy 2.0 for np.trapezoid; the 1.x spelling was np.trapz.
+    "numpy>=2.0",
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
+    # scipy 1.9 for the .statistic attribute on spearmanr's result.
+    "scipy>=1.10",
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "ruff>=0.4"]
+reference = ["causalml>=0.14", "scikit-uplift>=0.5"]
+
+[tool.setuptools.packages.find]
+include = ["uplift*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+# Put the repo root on sys.path so a bare `pytest` works on a fresh clone,
+# before `pip install -e` has been run. Without this, cloning and running
+# pytest fails with ModuleNotFoundError: No module named 'uplift', which
+# reads as broken code rather than an uninstalled package. Convenience only:
+# the dependencies still have to be installed for anything to pass.
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 90
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
