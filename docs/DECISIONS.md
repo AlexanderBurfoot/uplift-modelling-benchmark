@@ -80,6 +80,51 @@ test file's own directory, not the rootdir, so `tests/` landed on `sys.path`
 and the repo root did not. The `pythonpath` setting is the documented
 mechanism.
 
+## 2026-10-11 — Continuous outcomes rejected, not supported
+
+`load_hillstrom(outcome="spend")` raises, and `BaseLearner._check` raises on
+any outcome that is not 0/1. Previously the cast to `int` truncated spend
+into dozens of classes and the classifiers fitted them without complaint.
+Guarding was chosen over adding regression variants of the learners: spend
+is zero for over 99% of customers, so it carries less signal than
+conversion, which is already underpowered, and a second family of learners
+would need its own synthetic validation to be worth trusting.
+
+## 2026-10-11 — Profit charged on the treated arm's footing
+
+`Q(k)` counts incremental conversions among the treated customers in the top
+k, not among everyone in the top k. The Hillstrom profit figure therefore
+charges the contact cost for the treated customers only
+(`metrics.treated_at_k`). As first written it charged for the whole top k,
+about twice as many contacts as the conversions were measured over, which
+made every row lose money. The cost and value themselves are invented;
+Hillstrom publishes neither.
+
+## 2026-10-11 — Downloaded file validated before caching
+
+A response without the expected columns is rejected rather than written to
+`data/raw`. A moved or parked page still returns 200, and caching it left
+every later run failing on a `KeyError` with no hint to fetch the file by
+hand.
+
+## 2026-10-11 — Hillstrom evaluated over 20 splits, not one
+
+On a single 70/30 split the S-, T- and X-learners came out in a different
+order depending on the seed, so any ordering quoted from one split would
+have been a claim about the seed. The script now repeats the split over 20
+seeds, writes one row per split and learner, and reports the mean, the
+spread, and the paired per-split difference between each pair of learners.
+
+The spread is a standard deviation across splits and is not presented as a
+standard error or a confidence interval. The splits reuse the same 42,693
+customers, so they are not independent and no significance test is run on
+them. The paired differences carry the comparison instead: both learners are
+scored on the same test customers, and the count of splits on which one
+leads is reported as it is.
+
+The average treatment effect is computed on the full sample rather than a
+training split. It involves no model, so there is nothing to hold out for.
+
 ## Open
 
 - Uplift trees not implemented. Deliberate scope cut for the first version.

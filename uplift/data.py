@@ -30,18 +30,27 @@ _CACHE = Path(__file__).resolve().parent.parent / "data" / "raw" / "hillstrom.cs
 
 _CATEGORICAL = ("history_segment", "zip_code", "channel")
 
+# The learners fit classifiers, so only the binary outcomes are offered.
+_BINARY_OUTCOMES = ("visit", "conversion")
+_OUTCOME_COLUMNS = ("visit", "conversion", "spend")
+_REQUIRED_COLUMNS = frozenset(("segment", *_OUTCOME_COLUMNS))
+
 
 def _download(destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     try:
         with urllib.request.urlopen(HILLSTROM_URL, timeout=60) as response:
             payload = response.read()
+        frame = pd.read_csv(io.BytesIO(payload))
+        # A moved or parked page still answers, so check before caching it.
+        missing = _REQUIRED_COLUMNS - set(frame.columns)
+        if missing:
+            raise ValueError(f"response lacks columns {sorted(missing)}")
     except Exception as exc:  # noqa: BLE001 - surface the cause plainly
         raise RuntimeError(
             f"Could not download the Hillstrom dataset from {HILLSTROM_URL}. "
             f"Download it manually and save it to {destination}. Cause: {exc}"
         ) from exc
-    frame = pd.read_csv(io.BytesIO(payload))
     frame.to_csv(destination, index=False)
 
 
@@ -58,9 +67,10 @@ def load_hillstrom(
             third arm is dropped rather than pooled, because pooling two
             different creatives into one "treated" group estimates the
             average of two different effects and is hard to interpret.
-        outcome: One of ``visit``, ``conversion`` or ``spend``. ``visit`` is
-            the usual choice: conversion fires on roughly 0.9% of customers,
-            which leaves very little signal for a heterogeneity model.
+        outcome: ``visit`` or ``conversion``. ``visit`` is the usual choice:
+            conversion fires on roughly 0.9% of customers, which leaves very
+            little signal for a heterogeneity model. ``spend`` is rejected,
+            because it is continuous and the learners fit classifiers.
         path: Override the cache location.
         encode: One-hot encode the categorical columns. Set False to inspect
             the raw frame.
@@ -70,8 +80,13 @@ def load_hillstrom(
     """
     if treatment_segment not in SEGMENTS[:2]:
         raise ValueError(f"treatment_segment must be one of {SEGMENTS[:2]}")
-    if outcome not in {"visit", "conversion", "spend"}:
-        raise ValueError("outcome must be 'visit', 'conversion' or 'spend'")
+    if outcome == "spend":
+        raise ValueError(
+            "outcome='spend' is not supported: spend is continuous and the "
+            "learners fit classifiers. Use 'visit' or 'conversion'."
+        )
+    if outcome not in _BINARY_OUTCOMES:
+        raise ValueError(f"outcome must be one of {_BINARY_OUTCOMES}")
 
     destination = Path(path) if path else _CACHE
     if not destination.exists():
@@ -85,7 +100,7 @@ def load_hillstrom(
     frame["treatment"] = (raw["segment"] == treatment_segment).astype(int)
     frame["outcome"] = raw[outcome].astype(float)
 
-    features = raw.drop(columns=["segment", "visit", "conversion", "spend"])
+    features = raw.drop(columns=["segment", *_OUTCOME_COLUMNS])
     if encode:
         features = pd.get_dummies(
             features, columns=list(_CATEGORICAL), drop_first=True, dtype=float

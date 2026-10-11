@@ -108,6 +108,18 @@ def test_targeting_the_top_decile_by_true_effect_beats_targeting_everyone(experi
     assert top_decile > 0.1 * everyone
 
 
+def test_treated_at_k_counts_the_treated_among_the_top_ranked():
+    treatment = np.array([1, 0, 1, 1, 0, 0, 1, 0, 0, 1])
+    score = np.arange(len(treatment), 0, -1)
+    assert metrics.treated_at_k(treatment, score, 0.5) == 3
+    assert metrics.treated_at_k(treatment, score, 1.0) == treatment.sum()
+
+
+def test_treated_at_k_rejects_an_invalid_depth():
+    with pytest.raises(ValueError):
+        metrics.treated_at_k(np.array([1, 0]), np.array([0.2, 0.1]), 0.0)
+
+
 def test_pehe_is_zero_for_a_perfect_estimate(experiment):
     assert metrics.pehe(experiment["tau"], experiment["tau"]) == pytest.approx(0.0)
 

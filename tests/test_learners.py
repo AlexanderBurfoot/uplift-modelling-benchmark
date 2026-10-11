@@ -108,6 +108,14 @@ def test_non_binary_treatment_is_rejected(cls, split):
         cls().fit(train[columns].values, treatment, train["outcome"])
 
 
+@pytest.mark.parametrize("cls", UPLIFT_LEARNERS)
+def test_a_continuous_outcome_is_rejected_not_truncated(cls, split):
+    train, _, columns = split
+    spend = train["outcome"] * 12.5
+    with pytest.raises(ValueError, match="0/1"):
+        cls().fit(train[columns].values, train["treatment"], spend)
+
+
 def test_x_learner_uses_the_observed_propensity_when_none_is_given(split):
     train, _, columns = split
     model = _fit(XLearner, train, columns)

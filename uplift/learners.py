@@ -64,9 +64,14 @@ class BaseLearner:
     def _check(X, treatment, y):
         X = _as_array(X)
         treatment = np.asarray(treatment).astype(int).ravel()
-        y = np.asarray(y).astype(int).ravel()
+        y = np.asarray(y, dtype=float).ravel()
         if not (len(X) == len(treatment) == len(y)):
             raise ValueError("X, treatment and y must have the same length")
+        # An integer cast would truncate a continuous outcome into dozens of
+        # classes without complaint, so refuse it instead.
+        if set(np.unique(y)) - {0, 1}:
+            raise ValueError("y must be coded 0/1; these learners fit classifiers")
+        y = y.astype(int)
         if set(np.unique(treatment)) - {0, 1}:
             raise ValueError("treatment must be coded 0/1")
         if treatment.sum() == 0 or (1 - treatment).sum() == 0:

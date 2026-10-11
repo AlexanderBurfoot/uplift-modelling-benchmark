@@ -26,6 +26,7 @@ __all__ = [
     "qini_auc",
     "qini_coefficient",
     "incremental_at_k",
+    "treated_at_k",
     "pehe",
     "effect_correlation",
 ]
@@ -98,8 +99,29 @@ def incremental_at_k(y, treatment, score, k: float) -> float:
     if not 0.0 < k <= 1.0:
         raise ValueError("k must lie in (0, 1]")
     fraction, gains = qini_curve(y, treatment, score)
-    index = int(round(k * (len(gains) - 1)))
-    return float(gains[index])
+    return float(gains[_depth(k, len(gains) - 1)])
+
+
+def treated_at_k(treatment, score, k: float) -> int:
+    """Treated individuals among the top ``k`` fraction.
+
+    The count ``incremental_at_k`` is measured over, since Q(k) is on the
+    treated arm's footing. Any cost set against those conversions has to be
+    charged for this many contacts, not for everyone in the top ``k``.
+    """
+    if not 0.0 < k <= 1.0:
+        raise ValueError("k must lie in (0, 1]")
+    treatment = np.asarray(treatment, dtype=float).ravel()
+    score = np.asarray(score, dtype=float).ravel()
+    if len(treatment) != len(score):
+        raise ValueError("treatment and score must have the same length")
+    order = np.argsort(-score, kind="stable")
+    return int(treatment[order][: _depth(k, len(treatment))].sum())
+
+
+def _depth(k: float, n: int) -> int:
+    """Number of individuals in the top ``k`` fraction of ``n``."""
+    return int(round(k * n))
 
 
 def pehe(true_tau, predicted_tau) -> float:

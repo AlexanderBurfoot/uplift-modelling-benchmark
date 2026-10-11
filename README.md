@@ -83,7 +83,7 @@ so the declared floor is tested rather than assumed.
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-pytest                          # 79 tests
+pytest                          # 98 tests
 python scripts/run_synthetic.py # the table above
 python scripts/run_hillstrom.py # real randomised data
 ```
